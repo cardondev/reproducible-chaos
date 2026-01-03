@@ -1,372 +1,264 @@
-# Getting Started
+# Reproducible Chaos Dotfiles 
+![RHEL](https://img.shields.io/badge/RHEL-compatible-red)
+![Fedora](https://img.shields.io/badge/Fedora-compatible-blue)
+![Rocky Linux](https://img.shields.io/badge/Rocky%20Linux-compatible-green)
+![AlmaLinux](https://img.shields.io/badge/AlmaLinux-compatible-purple)
 
-Everything you need to know to get up and running with these dotfiles.
+## Compatible Distros
+  - Red Hat Enterprise Linux
+  - Rocky Linux
+  - AlmaLinux
+  - Fedora
+    
+> [!NOTE]
+> This might work on Ubuntu based distros, but it is not officially supported.
 
----
+## Features
+
+- **PuTTY Compatible**: ASCII fallback for terminals without Unicode support
+- **Theme**: ![Catppuccin Mocha](https://img.shields.io/badge/Catppuccin-Mocha-1e1e2e)
+- **RHEL Optimized**: Aliases and functions tailored for EL based distros
+- **Dual Installation Modes**: Native overwrite or prefix based installation
+- **Safe Deployment**: Backs up existing configurations with restore script
+- **Modular Design**: Easy to customize and extend
+- **No External Dependencies**: Uses only bash, vim, tmux, and standard RHEL tools
+
+## File Structure
+
+```
+dotfiles/
+├── deploy.sh       # Installation script
+├── bashrc          # Main bash configuration
+├── aliases         # Command aliases
+├── functions       # Shell functions
+├── vimrc           # Vim configuration
+├── tmux.conf       # Tmux configuration
+└── README.md       # This file
+```
 
 ## Installation
 
-### Download and Extract
-
-```bash
-# Download the tarball
-# Then extract it
-tar xzf dotfiles.tar.gz
-cd dotfiles
-```
-
-### Run the Installer
+### Quick Install
 
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-### Choose Installation Mode
+### Installation Modes
 
-You'll be prompted to choose:
+The deployment script offers two modes:
 
-**Option 1: Native Mode**
-- Directly replaces your `.bashrc`, `.vimrc`, `.tmux.conf`
+#### Native Mode (Recommended for personal systems)
+- Directly overwrites `.bashrc`, `.vimrc`, `.tmux.conf`
 - Uses standard `.bash_aliases` and `.bash_functions`
-- Best for personal systems
-- Original files are backed up
+- Original files are backed up with a restore script
+- Works like any normal dotfiles setup
 
-**Option 2: Prefix Mode**
-- Creates separate files (e.g., `.cardondev_bashrc`)
-- Only adds a sourcing line to your existing `.bashrc`
-- Best for shared systems or testing
-- Allows multiple configurations
+#### Prefix Mode (Recommended for shared/managed systems)
+- Creates separate files like `.dotfiles_bashrc`
+- Original `.bashrc` is preserved (only adds sourcing line)
+- Allows multiple configurations on the same system
+- Good for testing without affecting existing setup
 
-### Activate
+### Restoring Original Configuration
+
+If you used native mode and want to restore your original dotfiles:
 
 ```bash
-source ~/.bashrc
+# The backup location is shown after installation
+~/.dotfiles_backup_YYYYMMDDHHMMSS/restore.sh
 ```
 
----
+### Manual Install (Prefix Mode)
 
-## The Prompt
+1. Copy files to home directory with your chosen prefix:
+   ```bash
+   cp bashrc ~/.myprefix_bashrc
+   cp aliases ~/.myprefix_aliases
+   cp functions ~/.myprefix_functions
+   cp vimrc ~/.myprefix_vimrc
+   cp tmux.conf ~/.myprefix_tmux.conf
+   ```
 
-Your new prompt looks like this:
+2. Add to `~/.bashrc`:
+   ```bash
+   export DOTFILES_PREFIX=".myprefix"
+   if [[ -f "$HOME/.myprefix_bashrc" ]]; then
+       source "$HOME/.myprefix_bashrc"
+   fi
+   ```
 
+3. Reload shell:
+   ```bash
+   source ~/.bashrc
+   ```
+
+## Prompt Format
+
+The prompt adapts to terminal capabilities:
+
+**Unicode Terminals (Windows Terminal, modern xterm)**:
 ```
-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-═-
-┌─[14:30:22 EST]─[Wednesday, January 15, 2025]─[user@hostname]
-├─[~/projects/mystuff]
+┌─[16:20:34 EST]─[Wednesday, December 31, 2025]─[user@hostname]
+├─[~/projects]
 └─❯❯❯ 
 ```
 
-**As root:**
+**Root User**:
 ```
+┌─[16:20:34 EST]─[Wednesday, December 31, 2025]─[root@hostname]
+├─[/etc]
 └─⚡❯❯❯ 
 ```
 
-**After a command fails:**
+**ASCII Fallback (PuTTY)**:
 ```
-└─[!1]❯❯❯ 
-```
-
-> **PuTTY Users:** The prompt automatically uses ASCII characters if Unicode isn't supported.
-
----
-
-## First Commands to Try
-
-### Check System Status
-
-```bash
-# Comprehensive system info
-sysinfo
-
-# Quick health check
-healthcheck
++-[16:20:34 EST]-[Wednesday, December 31, 2025]-[user@hostname]
+|-[~/projects]
++->>> 
 ```
 
-### Get Help
+## Key Aliases
 
-```bash
-# Function reference
-helpme
+### Navigation
+| Alias | Command |
+|-------|---------|
+| `..` | `cd ..` |
+| `...` | `cd ../..` |
+| `ll` | `ls -lAhF --group-directories-first` |
 
-# See all aliases
-alias
-```
+### Systemd Services
+| Alias | Command |
+|-------|---------|
+| `sts` | `systemctl status` |
+| `srt` | `sudo systemctl start` |
+| `stp` | `sudo systemctl stop` |
+| `srs` | `sudo systemctl restart` |
+| `sfailed` | `systemctl --failed` |
 
-### Navigate Quickly
+### Package Management
+| Alias | Command |
+|-------|---------|
+| `update` | `sudo dnf update -y` |
+| `install` | `sudo dnf install -y` |
+| `search` | `dnf search` |
 
-```bash
-# Go up directories
-..      # One level
-...     # Two levels
-....    # Three levels
+### Logs
+| Alias | Command |
+|-------|---------|
+| `logs` | `sudo journalctl -xe` |
+| `syslog` | `sudo tail -f /var/log/messages` |
+| `authlog` | `sudo tail -f /var/log/secure` |
 
-# Go home
-~
+### SELinux
+| Alias | Command |
+|-------|---------|
+| `sestat` | `getenforce` |
+| `secontext` | `ls -laZ` |
+| `seaudit` | `sudo ausearch -m AVC -ts recent` |
 
-# Go back
--
-```
+## Key Functions
 
----
+| Function | Description |
+|----------|-------------|
+| `sysinfo` | Display system information |
+| `healthcheck` | Quick system health check |
+| `svc <name> <action>` | Service management helper |
+| `mkcd <dir>` | Create and enter directory |
+| `mkbak <file>` | Create timestamped backup |
+| `extract <archive>` | Extract any archive type |
+| `ff <pattern>` | Find files by name |
+| `ftext <pattern>` | Search file contents |
+| `portcheck <host> [port]` | Check if port is open |
+| `usercheck <user>` | Display user information |
+| `logsearch <pattern>` | Search logs for pattern |
+| `errorlog [n]` | Show recent errors |
+| `helpme` | Show function reference |
 
-## Essential Aliases
+## Vim Shortcuts
 
-### What You'll Use Daily
+| Key | Action |
+|-----|--------|
+| `Space` | Leader key |
+| `Space w` | Save |
+| `Space q` | Quit |
+| `Space e` | File browser (netrw) |
+| `Space Space` | Clear search highlight |
+| `Space v` | Vertical split |
+| `Space s` | Horizontal split |
+| `jk` | Escape (insert mode) |
+| `Tab` | Next tab |
+| `Shift-Tab` | Previous tab |
 
-| Old Way | New Way | What It Does |
-|---------|---------|--------------|
-| `ls -la` | `ll` | Long list with details |
-| `systemctl status nginx` | `sts nginx` | Check service |
-| `systemctl restart nginx` | `srs nginx` | Restart service |
-| `journalctl -u nginx -f` | `slog nginx` | Follow logs |
-| `vim ~/.bashrc` | `vbash` | Edit bash config |
-| `source ~/.bashrc` | `reload` | Reload config |
+## Tmux Shortcuts
 
-### Service Management
-
-```bash
-# Check a service
-sts httpd
-
-# Start and enable
-srt httpd
-sen httpd
-
-# See what's wrong
-sfailed
-```
-
-### Finding Things
-
-```bash
-# Find files
-ff "*.conf"
-
-# Find text in files
-ftext "error"
-
-# Find large files
-bigfiles 100M
-```
-
----
-
-## Working with Tmux
-
-### Start a Session
-
-```bash
-# New session
-tmux
-
-# Named session (better)
-tn work
-```
-
-### Essential Keys
-
-Remember: Prefix is `Ctrl+a`
-
-| Action | Keys |
-|--------|------|
-| Split vertical | `Ctrl+a |` |
-| Split horizontal | `Ctrl+a -` |
-| Navigate panes | `Alt + Arrow` |
-| New window | `Ctrl+a c` |
-| Next window | `Shift + Right` |
-| Detach | `Ctrl+a d` |
-
-### Reattach Later
-
-```bash
-# List sessions
-tl
-
-# Attach
-ta work
-```
-
----
-
-## Using Vim
-
-### Basic Workflow
-
-```bash
-vim mystuff.txt
-```
-
-1. Press `i` to enter insert mode
-2. Type your text
-3. Press `jk` (or Escape) to exit insert mode
-4. Press `Space w` to save
-5. Press `Space q` to quit
-
-### Quick Reference
-
-| Action | Keys |
-|--------|------|
-| Save | `Space w` |
-| Quit | `Space q` |
-| Save & Quit | `Space x` |
-| Search | `/pattern` |
-| Clear search | `Space Space` |
-| File browser | `Space e` |
-
----
+| Key | Action |
+|-----|--------|
+| `Ctrl-a` | Prefix (instead of Ctrl-b) |
+| `Prefix \|` | Vertical split |
+| `Prefix -` | Horizontal split |
+| `Prefix r` | Reload config |
+| `Prefix y` | Toggle sync panes |
+| `Prefix h/j/k/l` | Navigate panes (vim-style) |
+| `Alt-Arrow` | Navigate panes (no prefix) |
+| `Shift-Left/Right` | Navigate windows |
 
 ## Customization
 
-### Edit Configs
-
+### Disable Welcome Message
 ```bash
-vbash     # Main shell config
-valias    # Aliases
-vfunc     # Functions
-vvim      # Vim config
-vtmux     # Tmux config
-```
-
-### Reload After Changes
-
-```bash
-# Shell config
-reload
-# or
-dotfiles_update
-
-# Vim (inside vim)
-:source %
-
-# Tmux (inside tmux)
-Ctrl+a r
-```
-
----
-
-## Disable Welcome Screen
-
-If you don't want the startup message:
-
-```bash
-# Add to your .bashrc (before sourcing dotfiles)
 export DOTFILES_NO_WELCOME=1
 ```
 
----
+### Force Unicode/ASCII Mode
+```bash
+export TERM_HAS_UNICODE=1  # Force Unicode
+export TERM_HAS_UNICODE=0  # Force ASCII
+```
 
-## Force ASCII Mode
+### Edit Configuration
+```bash
+vbash    # Edit bashrc
+valias   # Edit aliases
+vfunc    # Edit functions
+vvim     # Edit vimrc
+vtmux    # Edit tmux.conf
+```
 
-For terminals without Unicode support:
+## Uninstallation
 
 ```bash
-# Add to your .bashrc
-export TERM_HAS_UNICODE=0
+./deploy.sh uninstall
 ```
 
----
+Or manually remove files and the integration block from `~/.bashrc`.
 
-## Backup and Restore
+## Compatibility
 
-### Your Backups
-
-When you installed, your original files were backed up to:
-```
-~/.dotfiles_backup_YYYYMMDDHHMMSS/
-```
-
-### Restore Original
-
-```bash
-~/.dotfiles_backup_YYYYMMDDHHMMSS/restore.sh
-source ~/.bashrc
-```
-
-### Backup Current Config
-
-```bash
-dotfiles_backup
-```
-
----
+- **Operating Systems**: RHEL 7, RHEL 8, RHEL 9, CentOS 7+, Rocky Linux, AlmaLinux
+- **Terminals**: PuTTY, SuperPuTTY, Windows Terminal, xterm, gnome-terminal
+- **Bash Version**: 4.0+ (3.2 with reduced features)
+- **Tmux Version**: 2.1+
+- **Vim Version**: 7.4+
 
 ## Troubleshooting
 
-### Colors Not Working
-
+### Prompt characters not displaying correctly
+Set ASCII mode:
 ```bash
-# Check terminal type
-echo $TERM
-
-# Should be xterm-256color or similar
-# If not, add to .bashrc:
-export TERM=xterm-256color
-```
-
-### Prompt Characters Broken
-
-```bash
-# Force ASCII mode
 export TERM_HAS_UNICODE=0
 source ~/.bashrc
 ```
 
-### Tmux Colors Wrong
-
+### Colors not working
+Ensure 256-color support:
 ```bash
-# Start tmux with 256 colors
-tmux -2
+export TERM=xterm-256color
 ```
 
-### Alias Not Found
-
+### Tmux colors wrong
+Use screen-256color in tmux:
 ```bash
-# Reload configuration
-reload
-
-# Check if alias exists
-alias | grep myalias
+tmux -2  # Force 256 colors
 ```
-
----
-
-## Cheat Sheet
-
-```
-NAVIGATION
-  ..        Up one          ll        Long list
-  ...       Up two          ~         Home
-  -         Previous dir    c         Clear
-
-SERVICES
-  sts name  Status          srs name  Restart
-  srt name  Start           stp name  Stop
-  sen name  Enable          sdi name  Disable
-
-SYSTEM
-  sysinfo      Full system info
-  healthcheck  Quick health audit
-  helpme       Function reference
-
-LOGS
-  logs         System logs     syslog    Follow messages
-  authlog      Follow secure   errorlog  Recent errors
-
-EDIT CONFIG
-  vbash   bashrc    valias   aliases
-  vfunc   functions vvim     vimrc
-  vtmux   tmux      reload   Apply changes
-
-TMUX (Prefix = Ctrl+a)
-  |       Split vert      -         Split horiz
-  hjkl    Navigate        d         Detach
-  c       New window      Shift+←→  Switch window
-
-VIM (Leader = Space)
-  w       Save            q         Quit
-  e       File browser    Space     Clear search
-  v       Vsplit          s         Hsplit
-```
-
----
