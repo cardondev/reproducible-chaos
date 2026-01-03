@@ -724,7 +724,7 @@ main() {
  / /_/ / /_/ / /_/ __/ / /  __(__  ) 
 /_____/\____/\__/_/ /_/_/\___/____/  
                                      
-    Deployment Script v2.0
+    Deployment Script v1.0
 EOF
     echo -e "${RESET}"
     
