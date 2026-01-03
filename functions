@@ -1,0 +1,423 @@
+#!/bin/bash
+# =============================================================================
+# FUNCTIONS - Shell Functions
+# Theme: Catppuccin Mocha
+# Compatible: RHEL 7+
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Color Definitions (for functions)
+# -----------------------------------------------------------------------------
+_C_RESET='\e[0m'
+_C_BOLD='\e[1m'
+_C_RED='\e[38;5;203m'
+_C_GREEN='\e[38;5;151m'
+_C_YELLOW='\e[38;5;223m'
+_C_BLUE='\e[38;5;111m'
+_C_CYAN='\e[38;5;116m'
+_C_MAGENTA='\e[38;5;183m'
+_C_PEACH='\e[38;5;216m'
+
+# -----------------------------------------------------------------------------
+# Directory Operations
+# -----------------------------------------------------------------------------
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+mkbak() {
+    local file="$1"
+    [[ -z "$file" ]] && { echo "Usage: mkbak <file>"; return 1; }
+    cp -a "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)"
+}
+
+# -----------------------------------------------------------------------------
+# Archive Operations
+# -----------------------------------------------------------------------------
+extract() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: extract <archive>"
+        return 1
+    fi
+    if [[ ! -f "$1" ]]; then
+        echo "'$1' is not a valid file"
+        return 1
+    fi
+    case "$1" in
+        *.tar.bz2)   tar xjf "$1"     ;;
+        *.tar.gz)    tar xzf "$1"     ;;
+        *.tar.xz)    tar xJf "$1"     ;;
+        *.bz2)       bunzip2 "$1"     ;;
+        *.rar)       unrar x "$1"     ;;
+        *.gz)        gunzip "$1"      ;;
+        *.tar)       tar xf "$1"      ;;
+        *.tbz2)      tar xjf "$1"     ;;
+        *.tgz)       tar xzf "$1"     ;;
+        *.zip)       unzip "$1"       ;;
+        *.Z)         uncompress "$1"  ;;
+        *.7z)        7z x "$1"        ;;
+        *.xz)        xz -d "$1"       ;;
+        *.lzma)      lzma -d "$1"     ;;
+        *.rpm)       rpm2cpio "$1" | cpio -idmv ;;
+        *)           echo "'$1' cannot be extracted via extract()" ;;
+    esac
+}
+
+mktar() {
+    [[ -z "$1" ]] && { echo "Usage: mktar <directory>"; return 1; }
+    tar cvf "${1%%/}.tar" "$1"
+}
+
+mktgz() {
+    [[ -z "$1" ]] && { echo "Usage: mktgz <directory>"; return 1; }
+    tar czvf "${1%%/}.tar.gz" "$1"
+}
+
+mktbz() {
+    [[ -z "$1" ]] && { echo "Usage: mktbz <directory>"; return 1; }
+    tar cjvf "${1%%/}.tar.bz2" "$1"
+}
+
+# -----------------------------------------------------------------------------
+# Calculator
+# -----------------------------------------------------------------------------
+calc() {
+    echo "scale=4; $*" | bc -l
+}
+
+# -----------------------------------------------------------------------------
+# System Information
+# -----------------------------------------------------------------------------
+sysinfo() {
+    echo -e "${_C_CYAN}Hostname:${_C_RESET}    $(hostname -f 2>/dev/null || hostname)"
+    echo -e "${_C_CYAN}Kernel:${_C_RESET}      $(uname -r)"
+    echo -e "${_C_CYAN}Architecture:${_C_RESET} $(uname -m)"
+    echo -e "${_C_CYAN}Uptime:${_C_RESET}      $(uptime -p 2>/dev/null || uptime | awk -F'up ' '{print $2}' | awk -F',' '{print $1}')"
+    echo -e "${_C_CYAN}Date/Time:${_C_RESET}   $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    
+    if [[ -f /etc/redhat-release ]]; then
+        echo -e "${_C_CYAN}OS Release:${_C_RESET}  $(cat /etc/redhat-release)"
+    elif [[ -f /etc/os-release ]]; then
+        echo -e "${_C_CYAN}OS Release:${_C_RESET}  $(grep PRETTY_NAME /etc/os-release | cut -d'"' -f2)"
+    fi
+    
+    echo -e "\n${_C_CYAN}IP Addresses:${_C_RESET}"
+    ip -4 addr show 2>/dev/null | awk '/inet / && !/127.0.0.1/ {gsub(/\/.*/, "", $2); print "  " $NF ": " $2}'
+    
+    echo -e "\n${_C_CYAN}Memory:${_C_RESET}"
+    free -h | awk '/^Mem:/ {printf "  Total: %s  Used: %s  Free: %s  Available: %s\n", $2, $3, $4, $7}'
+    
+    echo -e "\n${_C_CYAN}Disk Usage:${_C_RESET}"
+    df -hT 2>/dev/null | awk 'NR==1 || /^\/dev/' | head -6
+    
+    echo -e "\n${_C_CYAN}Load Average:${_C_RESET} $(cat /proc/loadavg | awk '{print $1, $2, $3}')"
+    
+    echo -e "\n${_C_CYAN}Top 5 CPU Processes:${_C_RESET}"
+    ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && NR<=6 {printf "  %-8s %5s%%  %s\n", $1, $3, $11}'
+    
+    echo -e "\n${_C_CYAN}Top 5 Memory Processes:${_C_RESET}"
+    ps aux --sort=-%mem 2>/dev/null | awk 'NR>1 && NR<=6 {printf "  %-8s %5s%%  %s\n", $1, $4, $11}'
+}
+
+# -----------------------------------------------------------------------------
+# Quick System Health Check
+# -----------------------------------------------------------------------------
+healthcheck() {
+    echo -e "${_C_BOLD}${_C_CYAN}=== System Health Check ===${_C_RESET}\n"
+    
+    echo -e "${_C_YELLOW}[Load Average]${_C_RESET}"
+    local load=$(cat /proc/loadavg | awk '{print $1}')
+    local cpus=$(nproc)
+    local load_pct=$(echo "scale=0; $load * 100 / $cpus" | bc)
+    if [[ $load_pct -gt 100 ]]; then
+        echo -e "  ${_C_RED}WARNING: Load ($load) exceeds CPU count ($cpus)${_C_RESET}"
+    else
+        echo -e "  ${_C_GREEN}OK: Load $load (${load_pct}% of $cpus CPUs)${_C_RESET}"
+    fi
+    
+    echo -e "\n${_C_YELLOW}[Memory]${_C_RESET}"
+    local mem_pct=$(free | awk '/^Mem:/ {printf "%.0f", $3/$2 * 100}')
+    if [[ $mem_pct -gt 90 ]]; then
+        echo -e "  ${_C_RED}WARNING: Memory usage at ${mem_pct}%${_C_RESET}"
+    elif [[ $mem_pct -gt 75 ]]; then
+        echo -e "  ${_C_YELLOW}CAUTION: Memory usage at ${mem_pct}%${_C_RESET}"
+    else
+        echo -e "  ${_C_GREEN}OK: Memory usage at ${mem_pct}%${_C_RESET}"
+    fi
+    
+    echo -e "\n${_C_YELLOW}[Disk Space]${_C_RESET}"
+    df -h 2>/dev/null | awk 'NR>1 && /^\/dev/ {
+        gsub(/%/, "", $5);
+        if ($5 > 90) printf "  \033[38;5;203mCRITICAL: %s at %s%%\033[0m\n", $6, $5;
+        else if ($5 > 80) printf "  \033[38;5;223mWARNING: %s at %s%%\033[0m\n", $6, $5;
+        else printf "  \033[38;5;151mOK: %s at %s%%\033[0m\n", $6, $5;
+    }'
+    
+    echo -e "\n${_C_YELLOW}[Failed Services]${_C_RESET}"
+    local failed=$(systemctl --failed --no-pager 2>/dev/null | grep -c "failed" || echo "0")
+    if [[ $failed -gt 0 ]]; then
+        echo -e "  ${_C_RED}WARNING: $failed failed service(s)${_C_RESET}"
+        systemctl --failed --no-pager 2>/dev/null | grep "failed" | awk '{print "    " $2}'
+    else
+        echo -e "  ${_C_GREEN}OK: No failed services${_C_RESET}"
+    fi
+    
+    echo -e "\n${_C_YELLOW}[SELinux]${_C_RESET}"
+    local selinux=$(getenforce 2>/dev/null || echo "N/A")
+    if [[ "$selinux" == "Enforcing" ]]; then
+        echo -e "  ${_C_GREEN}OK: SELinux is Enforcing${_C_RESET}"
+    elif [[ "$selinux" == "Permissive" ]]; then
+        echo -e "  ${_C_YELLOW}CAUTION: SELinux is Permissive${_C_RESET}"
+    else
+        echo -e "  ${_C_RED}WARNING: SELinux is $selinux${_C_RESET}"
+    fi
+    
+    echo -e "\n${_C_YELLOW}[Zombie Processes]${_C_RESET}"
+    local zombies=$(ps aux | awk '$8 ~ /^Z/ {print}' | wc -l)
+    if [[ $zombies -gt 0 ]]; then
+        echo -e "  ${_C_RED}WARNING: $zombies zombie process(es)${_C_RESET}"
+    else
+        echo -e "  ${_C_GREEN}OK: No zombie processes${_C_RESET}"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Service Management Helpers
+# -----------------------------------------------------------------------------
+svc() {
+    [[ -z "$1" ]] && { echo "Usage: svc <service> [status|start|stop|restart|enable|disable]"; return 1; }
+    local service="$1"
+    local action="${2:-status}"
+    
+    case "$action" in
+        status|start|stop|restart|enable|disable|reload)
+            sudo systemctl "$action" "$service"
+            ;;
+        log)
+            sudo journalctl -u "$service" -f
+            ;;
+        *)
+            echo "Unknown action: $action"
+            echo "Valid actions: status, start, stop, restart, enable, disable, reload, log"
+            return 1
+            ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+# Find Operations
+# -----------------------------------------------------------------------------
+ff() {
+    find . -type f -iname "*$1*" 2>/dev/null
+}
+
+fd() {
+    find . -type d -iname "*$1*" 2>/dev/null
+}
+
+ftext() {
+    grep -rn --color=auto "$1" . 2>/dev/null
+}
+
+bigfiles() {
+    local size="${1:-100M}"
+    find . -type f -size "+$size" -exec ls -lh {} \; 2>/dev/null | sort -k5 -h
+}
+
+oldfiles() {
+    local days="${1:-30}"
+    find . -type f -mtime "+$days" -exec ls -lh {} \; 2>/dev/null
+}
+
+# -----------------------------------------------------------------------------
+# Process Management
+# -----------------------------------------------------------------------------
+pskill() {
+    [[ -z "$1" ]] && { echo "Usage: pskill <process_name>"; return 1; }
+    local pids=$(pgrep -f "$1")
+    if [[ -z "$pids" ]]; then
+        echo "No processes found matching: $1"
+        return 1
+    fi
+    echo "Found processes:"
+    ps aux | grep -v grep | grep "$1"
+    echo ""
+    read -p "Kill these processes? [y/N] " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]] && kill $pids && echo "Killed"
+}
+
+pswatch() {
+    [[ -z "$1" ]] && { echo "Usage: pswatch <process_name>"; return 1; }
+    watch -n 1 "ps aux | grep -v grep | grep -i $1"
+}
+
+# -----------------------------------------------------------------------------
+# Network Utilities
+# -----------------------------------------------------------------------------
+portcheck() {
+    [[ -z "$1" ]] && { echo "Usage: portcheck <host> [port]"; return 1; }
+    local host="$1"
+    local port="${2:-22}"
+    timeout 3 bash -c "echo >/dev/tcp/$host/$port" 2>/dev/null && \
+        echo -e "${_C_GREEN}Port $port on $host is OPEN${_C_RESET}" || \
+        echo -e "${_C_RED}Port $port on $host is CLOSED/FILTERED${_C_RESET}"
+}
+
+portscan() {
+    [[ -z "$1" ]] && { echo "Usage: portscan <host> [start_port] [end_port]"; return 1; }
+    local host="$1"
+    local start="${2:-1}"
+    local end="${3:-1024}"
+    echo "Scanning $host ports $start-$end..."
+    for port in $(seq $start $end); do
+        timeout 1 bash -c "echo >/dev/tcp/$host/$port" 2>/dev/null && echo "Port $port: OPEN"
+    done
+}
+
+whichip() {
+    local iface="${1:-}"
+    if [[ -n "$iface" ]]; then
+        ip -4 addr show "$iface" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1
+    else
+        ip -4 addr show 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $NF ": " $2}' | cut -d/ -f1
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# User Management
+# -----------------------------------------------------------------------------
+usercheck() {
+    [[ -z "$1" ]] && { echo "Usage: usercheck <username>"; return 1; }
+    local user="$1"
+    echo -e "${_C_CYAN}User Info:${_C_RESET}"
+    id "$user" 2>/dev/null || { echo "User not found"; return 1; }
+    echo -e "\n${_C_CYAN}Groups:${_C_RESET}"
+    groups "$user"
+    echo -e "\n${_C_CYAN}Password Status:${_C_RESET}"
+    sudo chage -l "$user" 2>/dev/null
+    echo -e "\n${_C_CYAN}Last Login:${_C_RESET}"
+    lastlog -u "$user" 2>/dev/null
+    echo -e "\n${_C_CYAN}Current Sessions:${_C_RESET}"
+    who | grep "^$user " || echo "No active sessions"
+}
+
+# -----------------------------------------------------------------------------
+# Log Analysis
+# -----------------------------------------------------------------------------
+logsearch() {
+    [[ -z "$1" ]] && { echo "Usage: logsearch <pattern> [logfile]"; return 1; }
+    local pattern="$1"
+    local logfile="${2:-/var/log/messages}"
+    sudo grep -i "$pattern" "$logfile" | tail -50
+}
+
+errorlog() {
+    local lines="${1:-50}"
+    echo -e "${_C_CYAN}=== Recent Errors in System Logs ===${_C_RESET}\n"
+    sudo journalctl -p err -n "$lines" --no-pager 2>/dev/null || \
+        sudo grep -i "error\|fail\|critical" /var/log/messages | tail -"$lines"
+}
+
+# -----------------------------------------------------------------------------
+# Welcome and Decoration
+# -----------------------------------------------------------------------------
+turbo_mode() {
+    echo -e "${_C_YELLOW}"
+    echo "TURBO MODE"
+    echo -e "${_C_GREEN}"
+    cat << 'EOF'
+                           *     .--.
+                                / /  `
+               +               | |
+                      '         \ \__,
+                  *          +   '--'  *
+                      +   /\
+         +              .'  '.   *
+                *      /======\      +
+                      ;:.  _   ;
+                      |:. (_)  |
+                      |:.  _   |
+            +         |:. (_)  |          *
+                      ;:.      ;
+                    .' \:.    / `.
+                   / .-'':._.'`-. \
+                   |/    /||\    \|
+       CardonDev _..--"""````"""--.._
+           _.-'``                    ``'-._
+         -'                                '-
+
+EOF
+    echo -e "${_C_RESET}"
+}
+
+# -----------------------------------------------------------------------------
+# Dotfiles Management (works with both native and prefix modes)
+# -----------------------------------------------------------------------------
+dotfiles_update() {
+    echo -e "${_C_CYAN}Reloading configuration...${_C_RESET}"
+    if [[ "$DOTFILES_MODE" == "native" ]]; then
+        source "$HOME/.bashrc" 2>/dev/null && \
+            echo -e "${_C_GREEN}Configuration reloaded successfully${_C_RESET}" || \
+            echo -e "${_C_RED}Error reloading configuration${_C_RESET}"
+    else
+        source "$HOME/${DOTFILES_PREFIX}_bashrc" 2>/dev/null && \
+            echo -e "${_C_GREEN}Configuration reloaded successfully${_C_RESET}" || \
+            echo -e "${_C_RED}Error reloading configuration${_C_RESET}"
+    fi
+}
+
+dotfiles_backup() {
+    local backup_dir="$HOME/dotfiles_backup_$(date +%Y%m%d%H%M%S)"
+    mkdir -p "$backup_dir"
+    if [[ "$DOTFILES_MODE" == "native" ]]; then
+        for f in ".bashrc" ".bash_aliases" ".bash_functions" ".vimrc" ".tmux.conf"; do
+            [[ -f "$HOME/$f" ]] && cp "$HOME/$f" "$backup_dir/"
+        done
+    else
+        for f in "${DOTFILES_PREFIX}_bashrc" "${DOTFILES_PREFIX}_aliases" "${DOTFILES_PREFIX}_functions" "${DOTFILES_PREFIX}_vimrc" "${DOTFILES_PREFIX}_tmux.conf"; do
+            [[ -f "$HOME/$f" ]] && cp "$HOME/$f" "$backup_dir/"
+        done
+    fi
+    echo -e "${_C_GREEN}Backup created: $backup_dir${_C_RESET}"
+}
+
+# -----------------------------------------------------------------------------
+# Help Function
+# -----------------------------------------------------------------------------
+helpme() {
+    echo -e "${_C_BOLD}${_C_CYAN}=== Quick Reference ===${_C_RESET}\n"
+    echo -e "${_C_YELLOW}System:${_C_RESET}"
+    echo "  sysinfo       - Display system information"
+    echo "  healthcheck   - Quick system health check"
+    echo "  svc <name>    - Service management helper"
+    echo ""
+    echo -e "${_C_YELLOW}Files:${_C_RESET}"
+    echo "  mkcd <dir>    - Create and enter directory"
+    echo "  mkbak <file>  - Create timestamped backup"
+    echo "  extract <arc> - Extract any archive type"
+    echo "  ff <pattern>  - Find files by name"
+    echo "  fd <pattern>  - Find directories by name"
+    echo "  ftext <pat>   - Search file contents"
+    echo "  bigfiles [sz] - Find files larger than size"
+    echo ""
+    echo -e "${_C_YELLOW}Network:${_C_RESET}"
+    echo "  portcheck <h> - Check if port is open"
+    echo "  whichip       - Show IP addresses"
+    echo ""
+    echo -e "${_C_YELLOW}Process:${_C_RESET}"
+    echo "  pskill <name> - Find and kill processes"
+    echo "  pswatch <nm>  - Watch process in real-time"
+    echo ""
+    echo -e "${_C_YELLOW}Users:${_C_RESET}"
+    echo "  usercheck <u> - Display user information"
+    echo ""
+    echo -e "${_C_YELLOW}Logs:${_C_RESET}"
+    echo "  logsearch <p> - Search logs for pattern"
+    echo "  errorlog [n]  - Show recent errors"
+    echo ""
+    echo -e "${_C_YELLOW}Config:${_C_RESET}"
+    echo "  vbash/valias/vfunc/vvim/vtmux - Edit configs"
+    echo "  dotfiles_update  - Reload configuration"
+    echo "  dotfiles_backup  - Backup configuration"
+}

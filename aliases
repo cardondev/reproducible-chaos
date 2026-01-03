@@ -1,0 +1,260 @@
+#!/bin/bash
+# =============================================================================
+# ALIASES - Shell Command Aliases
+# Theme: Catppuccin Mocha
+# Compatible: RHEL 7+
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Color Output
+# -----------------------------------------------------------------------------
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+alias diff='diff --color=auto'
+alias ip='ip -color=auto'
+alias dmesg='dmesg --color=auto'
+
+# -----------------------------------------------------------------------------
+# Directory Listing
+# -----------------------------------------------------------------------------
+alias ll='ls -lAhF --group-directories-first'
+alias la='ls -A'
+alias l='ls -CF'
+alias lt='ls -lAhFtr'
+alias lS='ls -lAhFS'
+alias lsd='ls -d */ 2>/dev/null'
+alias lsf='ls -p | grep -v /'
+
+# -----------------------------------------------------------------------------
+# Directory Navigation
+# -----------------------------------------------------------------------------
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias ~='cd ~'
+alias -- -='cd -'
+
+# -----------------------------------------------------------------------------
+# Safety Nets
+# -----------------------------------------------------------------------------
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias ln='ln -i'
+alias chown='chown --preserve-root'
+alias chmod='chmod --preserve-root'
+alias chgrp='chgrp --preserve-root'
+
+# -----------------------------------------------------------------------------
+# Improved Defaults
+# -----------------------------------------------------------------------------
+alias mkdir='mkdir -pv'
+alias wget='wget -c'
+alias df='df -hT'
+alias du='du -h'
+alias free='free -h'
+alias top='top -d 1'
+alias less='less -R'
+alias more='less -R'
+alias nano='vim'
+alias vi='vim'
+
+# -----------------------------------------------------------------------------
+# Networking
+# -----------------------------------------------------------------------------
+alias ports='ss -tulpn'
+alias listen='ss -tulpn | grep LISTEN'
+alias connections='ss -tup'
+alias myip='hostname -I | awk "{print \$1}"'
+alias pubip='curl -s ifconfig.me 2>/dev/null || echo "No internet access"'
+alias ping='ping -c 5'
+alias fastping='ping -c 50 -i 0.2'
+alias flushdns='systemctl restart systemd-resolved 2>/dev/null || systemctl restart nscd 2>/dev/null || echo "No DNS cache service found"'
+alias ns='nslookup'
+alias nst='netstat -tulpn'
+alias route='ip route'
+alias arp='ip neigh'
+alias tcpdump='tcpdump -nn'
+
+# -----------------------------------------------------------------------------
+# Firewall (firewalld)
+# -----------------------------------------------------------------------------
+alias fwlist='firewall-cmd --list-all'
+alias fwzones='firewall-cmd --get-zones'
+alias fwactive='firewall-cmd --get-active-zones'
+alias fwservices='firewall-cmd --get-services'
+alias fwreload='firewall-cmd --reload'
+alias fwpanic='firewall-cmd --panic-on'
+alias fwnopanic='firewall-cmd --panic-off'
+
+# -----------------------------------------------------------------------------
+# Package Management (DNF/YUM)
+# -----------------------------------------------------------------------------
+alias update='sudo dnf update -y || sudo yum update -y'
+alias upgrade='sudo dnf upgrade -y || sudo yum upgrade -y'
+alias install='sudo dnf install -y || sudo yum install -y'
+alias remove='sudo dnf remove -y || sudo yum remove -y'
+alias search='dnf search || yum search'
+alias pkginfo='dnf info || yum info'
+alias pkglist='dnf list installed || yum list installed'
+alias pkgclean='sudo dnf clean all || sudo yum clean all'
+alias repolist='dnf repolist || yum repolist'
+alias whatprovides='dnf provides || yum whatprovides'
+
+# -----------------------------------------------------------------------------
+# Systemd Services
+# -----------------------------------------------------------------------------
+alias sc='systemctl'
+alias sts='systemctl status'
+alias stp='sudo systemctl stop'
+alias srt='sudo systemctl start'
+alias srs='sudo systemctl restart'
+alias srl='sudo systemctl reload'
+alias sen='sudo systemctl enable'
+alias sdi='sudo systemctl disable'
+alias smask='sudo systemctl mask'
+alias sunmask='sudo systemctl unmask'
+alias sfailed='systemctl --failed'
+alias slist='systemctl list-units --type=service'
+alias slistall='systemctl list-unit-files --type=service'
+alias slog='journalctl -u'
+alias slive='journalctl -f'
+alias sboot='journalctl -b'
+alias stimers='systemctl list-timers'
+
+# -----------------------------------------------------------------------------
+# Process Management
+# -----------------------------------------------------------------------------
+alias psa='ps auxf'
+alias psg='ps aux | grep -v grep | grep -i'
+alias psmem='ps aux --sort=-%mem | head -20'
+alias pscpu='ps aux --sort=-%cpu | head -20'
+alias pstree='pstree -p'
+alias zombies='ps aux | awk '"'"'{if ($8 ~ /^Z/) print}'"'"''
+
+# -----------------------------------------------------------------------------
+# Disk and Filesystem
+# -----------------------------------------------------------------------------
+alias mount='mount | column -t'
+alias mounts='findmnt --real'
+alias lsblk='lsblk -f'
+alias dfh='df -hT | grep -v tmpfs | grep -v loop'
+alias duh='du -sh * 2>/dev/null | sort -h'
+alias duf='du -sh ./* 2>/dev/null | sort -h'
+alias biggest='du -sh * 2>/dev/null | sort -rh | head -20'
+alias usage='df -hT; echo ""; free -h'
+alias inodes='df -i'
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+alias logs='sudo journalctl -xe'
+alias syslog='sudo tail -f /var/log/messages'
+alias authlog='sudo tail -f /var/log/secure'
+alias bootlog='sudo journalctl -b'
+alias kernlog='sudo dmesg -T | tail -50'
+alias auditlog='sudo tail -f /var/log/audit/audit.log'
+alias lastlog='last -20'
+alias faillog='sudo faillock --user'
+alias logwatch='sudo tail -f /var/log/messages /var/log/secure /var/log/audit/audit.log'
+
+# -----------------------------------------------------------------------------
+# User and Permission Management
+# -----------------------------------------------------------------------------
+alias userlist='cat /etc/passwd | cut -d: -f1 | sort'
+alias grouplist='cat /etc/group | cut -d: -f1 | sort'
+alias sudoers='sudo cat /etc/sudoers'
+alias mygroups='groups $(whoami)'
+alias lastlogin='lastlog | grep -v "Never"'
+alias whoisloggedin='w'
+alias userinfo='id'
+
+# -----------------------------------------------------------------------------
+# SELinux
+# -----------------------------------------------------------------------------
+alias sestat='getenforce'
+alias semode='sudo setenforce'
+alias sebool='getsebool -a'
+alias secontext='ls -laZ'
+alias seaudit='sudo ausearch -m AVC -ts recent'
+alias sealerts='sudo sealert -a /var/log/audit/audit.log 2>/dev/null || echo "setroubleshoot not installed"'
+
+# -----------------------------------------------------------------------------
+# Performance and Monitoring
+# -----------------------------------------------------------------------------
+alias vmstat='vmstat 1 5'
+alias iostat='iostat -xz 1 5 2>/dev/null || echo "sysstat not installed"'
+alias sar='sar -u 1 5 2>/dev/null || echo "sysstat not installed"'
+alias meminfo='cat /proc/meminfo'
+alias cpuinfo='lscpu'
+alias loadavg='cat /proc/loadavg'
+alias uptime='uptime -p'
+
+# -----------------------------------------------------------------------------
+# SSH
+# -----------------------------------------------------------------------------
+alias sshl='cat ~/.ssh/config 2>/dev/null | grep -i "^host " | awk "{print \$2}"'
+alias sshkey='cat ~/.ssh/id_rsa.pub 2>/dev/null || cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo "No SSH key found"'
+alias sshgen='ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)-$(date +%Y%m%d)"'
+alias sshfp='ssh-keygen -l -f'
+alias sshadd='eval "$(ssh-agent -s)" && ssh-add'
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+alias hist='history | tail -50'
+alias histg='history | grep'
+alias c='clear'
+alias cls='clear'
+alias h='history'
+alias j='jobs -l'
+alias path='echo $PATH | tr ":" "\n"'
+alias now='date +"%Y-%m-%d %H:%M:%S %Z"'
+alias week='date +%V'
+alias epoch='date +%s'
+alias reload='source ~/.bashrc'
+alias busy='cat /dev/urandom | hexdump -C | grep "ca fe"'
+alias weather='curl -s wttr.in/?format=3 2>/dev/null || echo "No internet access"'
+alias headers='curl -I'
+alias myshell='echo $SHELL'
+alias colors='for i in {0..255}; do printf "\e[38;5;${i}m%3d " "$i"; (( i % 16 == 15 )) && echo; done; echo -e "\e[0m"'
+
+# -----------------------------------------------------------------------------
+# Tmux (with custom config, works with both modes)
+# -----------------------------------------------------------------------------
+if [[ "$DOTFILES_MODE" == "native" ]]; then
+    alias tmux='tmux -f "$HOME/.tmux.conf"'
+else
+    alias tmux='tmux -f "$HOME/${DOTFILES_PREFIX}_tmux.conf"'
+fi
+alias ta='tmux attach -t'
+alias tl='tmux list-sessions'
+alias tn='tmux new -s'
+alias tk='tmux kill-session -t'
+alias tka='tmux kill-server'
+
+# -----------------------------------------------------------------------------
+# Quick Edits (works with both native and prefix modes)
+# -----------------------------------------------------------------------------
+if [[ "$DOTFILES_MODE" == "native" ]]; then
+    alias vbash='${EDITOR:-vim} "$HOME/.bashrc"'
+    alias valias='${EDITOR:-vim} "$HOME/.bash_aliases"'
+    alias vfunc='${EDITOR:-vim} "$HOME/.bash_functions"'
+    alias vvim='${EDITOR:-vim} "$HOME/.vimrc"'
+    alias vtmux='${EDITOR:-vim} "$HOME/.tmux.conf"'
+else
+    alias vbash='${EDITOR:-vim} "$HOME/${DOTFILES_PREFIX}_bashrc"'
+    alias valias='${EDITOR:-vim} "$HOME/${DOTFILES_PREFIX}_aliases"'
+    alias vfunc='${EDITOR:-vim} "$HOME/${DOTFILES_PREFIX}_functions"'
+    alias vvim='${EDITOR:-vim} "$HOME/${DOTFILES_PREFIX}_vimrc"'
+    alias vtmux='${EDITOR:-vim} "$HOME/${DOTFILES_PREFIX}_tmux.conf"'
+fi
+
+# -----------------------------------------------------------------------------
+# Fun
+# -----------------------------------------------------------------------------
+alias turbo='turbo_mode'
+alias matrix='echo -e "\e[32m"; while :; do printf "%$((RANDOM % COLUMNS))s" "$((RANDOM % 2))"; done'
